@@ -1,21 +1,20 @@
 # modification by Philippe F6IFY to use the DJControl Compact midi device
-# Ph. Nouchi - 9th December 2024
+# This script is a modification of the original script from the EESDR project
+# by Matthew McDougal, KA0S
+# Philippe Nouchi - 9th December 2024
 # I reduce the VFO-Step at 25 Hz (see line 426 Knob Scrolls chapter)
 # I created a vfo_step variable (to do: to be changed with a potentiometer)
-# Version 0.1 P. Nouchi - F6IFY le 15 Janvier 2025
+# Version 0.1 Ph. Nouchi - F6IFY le 15 Janvier 2025
 
 from enum import IntEnum
 from functools import partial
 from bisect import bisect_right, bisect_left
-# from os.path import exists
-# import eesdr_tci
 from eesdr_tci import tci
 from eesdr_tci.listener import Listener
 from eesdr_tci.tci import TciCommandSendAction
 # from config import Config
 import mido
 import mido.backends.rtmidi
-#rtmidi = mido.Backend('mido.backends.rtmidi')
 import asyncio
 
 # to help future modification with new midi device
