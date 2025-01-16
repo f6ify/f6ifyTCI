@@ -483,8 +483,6 @@ async def midi_rx(tci_listener, midi_port):
                 curr_rx = 1
             elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
                 curr_rx = 0
-            elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
-                curr_rx = 0
             elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = "RIT_ENABLE:0,true;"
             elif msg.note == CC.DJ_BTN_SYNC_B and msg.velocity == MIDI.KEYDOWN:
