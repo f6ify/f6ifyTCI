@@ -457,7 +457,8 @@ async def midi_rx(tci_listener, midi_port):
                           }
         # if msg.control in kp_map:
         #     knob_plane = kp_map[msg.control] if msg.value == MIDI.KEYDOWN else KNOBPLANE.BASE
-        try: #A JOG or a potentiometer has been turned
+        try: # A JOG or a potentiometer has been turned
+            trx_cmd = ""
             if msg.control in key_map:
                 await run_cmds(tci_listener, key_map[msg.control](msg.value, curr_rx, curr_subx))
             if (msg.value == MIDI.ENCDOWN or msg.value == MIDI.ENCUP) and msg.control in knob_scroll_map:
@@ -466,34 +467,39 @@ async def midi_rx(tci_listener, midi_port):
                     await run_cmds(tci_listener, fn(msg.value, curr_rx, curr_subx))
             if msg.control == CC.DJ_CROSSFADER:
                 val = (100 * msg.value) / 127
-                trx_cmd = f"DRIVE:0,{val};"
-                await sendtci(trx_cmd, tci_listener, midi_port)
+                trx_cmd = f"DRIVE:{curr_rx},{val};"
+                # await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.control == CC.DJ_POTVOLUMEA:
                 val = (60 * msg.value) / 127
                 trx_cmd = f"VOLUME:{-val};"
-                await sendtci(trx_cmd, tci_listener, midi_port)
+                # await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.control == CC.DJ_POTVOLUMEB:
                 val = (60 * msg.value) / 127
                 trx_cmd = f"MON_VOLUME:{-val};"
                 await sendtci("MON_ENABLE:true", tci_listener, midi_port)
-                await sendtci(trx_cmd, tci_listener, midi_port)
+            await sendtci(trx_cmd, tci_listener, midi_port)
         except: # I press a button
-            if msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:
+            if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:
+                curr_rx = 1
+            elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
+                curr_rx = 0
+            elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
+                curr_rx = 0
+            elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = "RIT_ENABLE:0,true;"
-                await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.note == CC.DJ_BTN_SYNC_B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = "RIT_ENABLE:0,False;"
-                await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.note == CC.DJ_BTN_CUE_B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = "RIT_OFFSET:0,0;"
-                await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.note == CC.DJ_BTN_AUTOMIX and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = "MON_ENABLE:false;"
-                await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:
-                do_toggle("SPLIT ENABLE", "SPLIT_ENABLE",0,0)
-                # trx_cmd = "SPLIT_ENABLE:0,true;"
-                # await sendtci(trx_cmd, tci_listener, midi_port)
+                # do_toggle("SPLIT ENABLE", MIDI.KEYDOWN,0,0)
+                trx_cmd = "SPLIT_ENABLE:0,true;"
+            elif msg.note == CC.DJ_BTN_1A and msg.velocity == MIDI.KEYDOWN:
+                # do_toggle("SPLIT ENABLE", MIDI.KEYDOWN,0,0)
+                trx_cmd = "SPLIT_ENABLE:0,false;"
+            await sendtci(trx_cmd, tci_listener, midi_port)
             # print(f"message complet is {msg}")
 
 async def main(uri, midi_port):
