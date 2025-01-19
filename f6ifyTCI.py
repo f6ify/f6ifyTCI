@@ -468,11 +468,9 @@ async def midi_rx(tci_listener, midi_port):
             if msg.control == CC.DJ_CROSSFADER:
                 val = (100 * msg.value) / 127
                 trx_cmd = f"DRIVE:{curr_rx},{val};"
-                # await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.control == CC.DJ_POTVOLUMEA:
                 val = (60 * msg.value) / 127
                 trx_cmd = f"VOLUME:{-val};"
-                # await sendtci(trx_cmd, tci_listener, midi_port)
             elif msg.control == CC.DJ_POTVOLUMEB:
                 val = (60 * msg.value) / 127
                 trx_cmd = f"MON_VOLUME:{-val};"
@@ -484,19 +482,19 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
                 curr_rx = 0
             elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "RIT_ENABLE:0,true;"
+                trx_cmd = f"RIT_ENABLE:{curr_rx},true;"
             elif msg.note == CC.DJ_BTN_SYNC_B and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "RIT_ENABLE:0,False;"
+                trx_cmd = f"RIT_ENABLE:{curr_rx},False;"
             elif msg.note == CC.DJ_BTN_CUE_B and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "RIT_OFFSET:0,0;"
+                trx_cmd = f"RIT_OFFSET:{curr_rx},0;"
             elif msg.note == CC.DJ_BTN_AUTOMIX and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = "MON_ENABLE:false;"
             elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:
                 # do_toggle("SPLIT ENABLE", MIDI.KEYDOWN,0,0)
-                trx_cmd = "SPLIT_ENABLE:0,true;"
+                trx_cmd = f"SPLIT_ENABLE:{curr_rx},true;"
             elif msg.note == CC.DJ_BTN_1A and msg.velocity == MIDI.KEYDOWN:
                 # do_toggle("SPLIT ENABLE", MIDI.KEYDOWN,0,0)
-                trx_cmd = "SPLIT_ENABLE:0,false;"
+                trx_cmd = f"SPLIT_ENABLE:{curr_rx},false;"
             await sendtci(trx_cmd, tci_listener, midi_port)
             # print(f"message complet is {msg}")
 
