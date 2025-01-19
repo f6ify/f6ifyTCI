@@ -21,34 +21,13 @@ import asyncio
 print(f"midi device is { mido.get_input_names()}")
 
 class MIDI(IntEnum):
-    KEYUP = 1
+    KEYUP = 0
     ENCDOWN = 127 # 21
     CLICK = 63 # 63
     ENCUP =  1 # 105
     KEYDOWN = 127
 
-class CC(IntEnum):
-    """ Remove all keys of the DOIO KB16-01
-    ENC_LARGE = 20
-    ENC_SMALL_LEFT = 21
-    ENC_SMALL_RIGHT = 22
-    KEY_R1_C1 = 102
-    KEY_R1_C2 = 103
-    KEY_R1_C3 = 104
-    KEY_R1_C4 = 105
-    KEY_R2_C1 = 106
-    KEY_R2_C2 = 107
-    KEY_R2_C3 = 108
-    KEY_R2_C4 = 109
-    KEY_R3_C1 = 110
-    KEY_R3_C2 = 111
-    KEY_R3_C3 = 112
-    KEY_R3_C4 = 113
-    KEY_R4_C1 = 114
-    KEY_R4_C2 = 115
-    KEY_R4_C3 = 116
-    KEY_R4_C4 = 117"""
-    KEY_R3_C2 = 1
+class CC(IntEnum): # Value for the DJControl compact from hercule
     # ** JOG **
     DJ_JOGORPOT = 176
     DJ_JOGA = 48
@@ -347,14 +326,8 @@ def midi_stream():
             yield await queue.get()
     return callback, stream()
 
-async def sendtci(cmd, tci_listener, midi_port):
-    trx_cmd = cmd
-    # tci_listener.start()
-    # tci_listener.ready()
-    await tci_listener.send(trx_cmd)
-
 async def midi_rx(tci_listener, midi_port):
-    global params_dict
+    global params_dict, trx_cmd
 
     curr_subx = 0
     curr_rx = 0
@@ -379,14 +352,14 @@ async def midi_rx(tci_listener, midi_port):
         #          }
 
         # Keypress TCI Toggles/Momentaries
-        key_map = { CC.DJ_BTN_1A: [partial(do_toggle, "RX_APF_ENABLE")],
-                    CC.DJ_BTN_2A: [partial(do_toggle, "RX_NB_ENABLE")],
-                    CC.KEY_R3_C2: partial(do_toggle, "RX_BIN_ENABLE")
-                    # CC.KEY_R3_C3: partial(do_toggle, "RX_NR_ENABLE"),
-                    # CC.KEY_R3_C4: partial(do_toggle, "RX_ANC_ENABLE"),
-                    # CC.KEY_R4_C3: partial(do_momentary, "TRX"),
-                    # CC.KEY_R4_C4: partial(do_momentary, "TUNE"),
-                  }
+        # key_map = { CC.DJ_BTN_1A: [partial(do_toggle, "RX_APF_ENABLE")],
+        #             CC.DJ_BTN_2A: [partial(do_toggle, "RX_NB_ENABLE")],
+        #             CC.KEY_R3_C2: partial(do_toggle, "RX_BIN_ENABLE")
+        #             # CC.KEY_R3_C3: partial(do_toggle, "RX_NR_ENABLE"),
+        #             # CC.KEY_R3_C4: partial(do_toggle, "RX_ANC_ENABLE"),
+        #             # CC.KEY_R4_C3: partial(do_momentary, "TRX"),
+        #             # CC.KEY_R4_C4: partial(do_momentary, "TUNE"),
+        #           }
 
         # Knob Clicks
         # knob_click_map = { CC.DJ_BTN_1A: [ partial(do_toggle, "RIT_ENABLE"),
@@ -396,31 +369,7 @@ async def midi_rx(tci_listener, midi_port):
         #                                    partial(do_toggle, "MUTE"),
         #                                    partial(do_toggle, "MON_ENABLE"),
         #                                  ],
-        #                    CC.DJ_POTVOLUMEA: [ partial(do_toggle, "RIT_ENABLE"),
-        #                                    None,
-        #                                    None,
-        #                                    partial(do_generic_set, "DRIVE", 50),
-        #                                    partial(do_toggle, "MUTE"),
-        #                                    partial(do_toggle, "MON_ENABLE"),
-        #                                  ]
-        #                 }
-        #                                         partial(do_filter_scroll, FILTERSIDE.LEFT),
-        #                                         partial(do_toggle, "RIT_ENABLE"),
-        #                                         None,
-        #                                         None,
-        #                                         do_volume_reset,
-        #                                         None,
-        #                                       ],
-        #                    CC.ENC_SMALL_RIGHT: [ partial(do_toggle, "SQL_ENABLE"),
-        #                                          partial(do_filter_scroll, FILTERSIDE.RIGHT),
-        #                                          partial(do_toggle, "XIT_ENABLE"),
-        #                                          None,
-        #                                          partial(do_generic_set, "TUNE_DRIVE", 10),
-        #                                          partial(do_toggle, "RX_MUTE"),
-        #                                          None,
-        #                                        ],
-        #                  }
-
+        #  }
         # Knob Scrolls
         vfo_stepA = 25
         vfo_stepB = 100
@@ -445,22 +394,14 @@ async def midi_rx(tci_listener, midi_port):
                                             partial(do_generic_scroll, "DRIVE", 2),
                                             partial(do_generic_scroll, "VOLUME", 2),
                                             partial(do_generic_scroll, "MON_VOLUME", 2),
-                                         ],
-                            CC.DJ_BTN_SYNC_A: [partial(do_toggle, "RIT_ENABLE"),
-                                             partial(do_filter_scroll, FILTERSIDE.LEFT, 500, curr_rx),
-                                             do_mod_scroll,
-                                             do_band_scroll,
-                                             partial(do_generic_scroll, "DRIVE", 2),
-                                             partial(do_generic_scroll, "VOLUME", 2),
-                                             partial(do_generic_scroll, "MON_VOLUME", 2),
-                                             ]
+                                         ]
                           }
         # if msg.control in kp_map:
         #     knob_plane = kp_map[msg.control] if msg.value == MIDI.KEYDOWN else KNOBPLANE.BASE
         try: # A JOG or a potentiometer has been turned
             trx_cmd = ""
-            if msg.control in key_map:
-                await run_cmds(tci_listener, key_map[msg.control](msg.value, curr_rx, curr_subx))
+            # if msg.control in key_map:
+            #     await run_cmds(tci_listener, key_map[msg.control](msg.value, curr_rx, curr_subx))
             if (msg.value == MIDI.ENCDOWN or msg.value == MIDI.ENCUP) and msg.control in knob_scroll_map:
                 fn = knob_scroll_map[msg.control][knob_plane]
                 if fn is not None:
@@ -474,8 +415,7 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.control == CC.DJ_POTVOLUMEB:
                 val = (60 * msg.value) / 127
                 trx_cmd = f"MON_VOLUME:{-val};"
-                await sendtci("MON_ENABLE:true", tci_listener, midi_port)
-            await sendtci(trx_cmd, tci_listener, midi_port)
+            await tci_listener.send(trx_cmd)
         except: # I press a button
             if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:
                 curr_rx = 1
@@ -488,28 +428,40 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.note == CC.DJ_BTN_CUE_B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = f"RIT_OFFSET:{curr_rx},0;"
             elif msg.note == CC.DJ_BTN_AUTOMIX and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "MON_ENABLE:false;"
+                trx_cmd = do_toggle("MON_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
+            elif msg.note == CC.DJ_BTN_REC and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_toggle("MUTE", MIDI.KEYDOWN, curr_rx, curr_subx)
+            elif msg.note == CC.DJ_BTN_MODE and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_mod_scroll(MIDI.ENCDOWN, curr_rx, curr_subx)
+            elif msg.note == CC.DJ_BTN_SHIFT and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_mod_scroll(MIDI.ENCUP, curr_rx, curr_subx)
             elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:
-                # do_toggle("SPLIT ENABLE", MIDI.KEYDOWN,0,0)
                 trx_cmd = f"SPLIT_ENABLE:{curr_rx},true;"
             elif msg.note == CC.DJ_BTN_1A and msg.velocity == MIDI.KEYDOWN:
-                # do_toggle("SPLIT ENABLE", MIDI.KEYDOWN,0,0)
                 trx_cmd = f"SPLIT_ENABLE:{curr_rx},false;"
-            await sendtci(trx_cmd, tci_listener, midi_port)
+            elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = f"TRX:{curr_rx},true;"
+            elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYUP:
+                trx_cmd = f"TRX:{curr_rx},false;"
+            elif msg.note == CC.DJ_BTN_4A and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = "MON_ENABLE:false;"
+                mode = get_param("DDS", curr_rx, curr_subx)
+                print(f"mode is {mode}")
+            elif msg.note == CC.DJ_BTN_1B and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
+                # channel = get_param("RIT_OFFSET", 0)
+                # # channel = ""
+                print(f"trx_cmd is {trx_cmd}")
+            await tci_listener.send(trx_cmd)
             # print(f"message complet is {msg}")
 
 async def main(uri, midi_port):
     tci_listener = Listener(uri)
-
     tci_listener.add_param_listener("*", update_params)
-
     await tci_listener.start()
     await tci_listener.ready()
-
     asyncio.create_task(midi_rx(tci_listener, midi_port))
-
     await tci_listener.wait()
-
 # cfg = Config("config.json")
 # uri = cfg.get("uri", required=True)
 # midi_port = cfg.get("midi_port", required=True)
