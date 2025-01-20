@@ -9,6 +9,8 @@
 from enum import IntEnum
 from functools import partial
 from bisect import bisect_right, bisect_left
+from urllib.parse import non_hierarchical
+
 from eesdr_tci import tci
 from eesdr_tci.listener import Listener
 from eesdr_tci.tci import TciCommandSendAction
@@ -136,11 +138,11 @@ class BANDS:
     POINTS = [i for j in [band.points() for band in INFO] for i in j]
 
     def FreqBand(freq):
-        chk = [band.in_band(freq) for band in INFO]
+        chk = [band.in_band(freq) for band in BANDS.INFO]
         if not any(chk):
             return None
         else:
-            return INFO[chk.index(True)]
+            return BANDS.INFO[chk.index(True)]
 
 params_dict = {}
 
@@ -328,7 +330,8 @@ def midi_stream():
 
 async def midi_rx(tci_listener, midi_port):
     global params_dict, trx_cmd
-
+    lower_filter = 200
+    higher_filter = 200
     curr_subx = 0
     curr_rx = 0
     knob_plane = 0
@@ -371,33 +374,25 @@ async def midi_rx(tci_listener, midi_port):
         #                                  ],
         #  }
         # Knob Scrolls
-        vfo_stepA = 25
-        vfo_stepB = 100
-        knob_scroll_map = { CC.DJ_JOGA: [ partial(do_freq_scroll, vfo_stepA),
+        vfo_step = 25
+        # vfo_stepB = 100
+        knob_scroll_map = { CC.DJ_JOGA: [ partial(do_freq_scroll, vfo_step),
                                           None,None,None,None,None,None,None
-                                            # partial(do_filter_scroll, FILTERSIDE.MAIN),
-                                            # do_mod_scroll,
-                                            # do_band_scroll,
-                                            # partial(do_freq_scroll, vfo_stepA)
-                                            # partial(do_generic_scroll, "DRIVE", 2),
-                                            # partial(do_generic_scroll, "VOLUME", 2),
-                                            # partial(do_generic_scroll, "MON_VOLUME", 2)
-                                          ],
-                            CC.DJ_SHIFTJOGA: [partial(do_freq_scroll, vfo_stepB),
-                                         None, None, None, None, None, None, None ],
+                                        ],
+                            # CC.DJ_SHIFTJOGA: [partial(do_freq_scroll, vfo_stepB), Button shift is used to change the mode
+                            #              None, None, None, None, None, None, None ],
                             CC.DJ_JOGB: [ partial(do_generic_scroll, "RIT_OFFSET", 10),
-                                          None, None, None, None, None, None, None],
-                            CC.DJ_POTBASSA: [partial(do_generic_scroll, "VOLUME", 2),
-                                            partial(do_filter_scroll, FILTERSIDE.LEFT, 500, curr_rx),
-                                            do_mod_scroll,
-                                            do_band_scroll,
-                                            partial(do_generic_scroll, "DRIVE", 2),
-                                            partial(do_generic_scroll, "VOLUME", 2),
-                                            partial(do_generic_scroll, "MON_VOLUME", 2),
-                                         ]
+                                          None, None, None, None, None, None, None]
+                            # CC.DJ_POTBASSA: [partial(do_generic_scroll, "VOLUME", 2),
+                            #                 partial(do_filter_scroll, FILTERSIDE.LEFT, 500, curr_rx),
+                            #                 do_mod_scroll,
+                            #                 do_band_scroll,
+                            #                 partial(do_generic_scroll, "DRIVE", 2),
+                            #                 partial(do_generic_scroll, "VOLUME", 2),
+                            #                 partial(do_generic_scroll, "MON_VOLUME", 2),
+                            #              ]
                           }
-        # if msg.control in kp_map:
-        #     knob_plane = kp_map[msg.control] if msg.value == MIDI.KEYDOWN else KNOBPLANE.BASE
+
         try: # A JOG or a potentiometer has been turned
             trx_cmd = ""
             # if msg.control in key_map:
@@ -415,6 +410,14 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.control == CC.DJ_POTVOLUMEB:
                 val = (60 * msg.value) / 127
                 trx_cmd = f"MON_VOLUME:{-val};"
+            elif msg.control == CC.DJ_POTBASSA:
+                if higher_filter == None: higher_filter = 200
+                lower_filter = msg.value * 5
+                trx_cmd = f"RX_FILTER_BAND:{curr_rx},-{lower_filter},{higher_filter};"
+            elif msg.control == CC.DJ_POTBASSB:
+                if lower_filter == None: lower_filter = 200
+                higher_filter = msg.value * 5
+                trx_cmd = f"RX_FILTER_BAND:{curr_rx},-{lower_filter},{higher_filter};"
             await tci_listener.send(trx_cmd)
         except: # I press a button
             if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:
@@ -422,9 +425,11 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
                 curr_rx = 0
             elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = f"RIT_ENABLE:{curr_rx},true;"
+                curr_rx = 1
+                trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
             elif msg.note == CC.DJ_BTN_SYNC_B and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = f"RIT_ENABLE:{curr_rx},False;"
+                curr_rx = 0
+                trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
             elif msg.note == CC.DJ_BTN_CUE_B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = f"RIT_OFFSET:{curr_rx},0;"
             elif msg.note == CC.DJ_BTN_AUTOMIX and msg.velocity == MIDI.KEYDOWN:
@@ -444,13 +449,11 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYUP:
                 trx_cmd = f"TRX:{curr_rx},false;"
             elif msg.note == CC.DJ_BTN_4A and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "MON_ENABLE:false;"
+                trx_cmd = "RX_FILTER_BAND:0,-200,200;"
                 mode = get_param("DDS", curr_rx, curr_subx)
                 print(f"mode is {mode}")
-            elif msg.note == CC.DJ_BTN_1B and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
-                # channel = get_param("RIT_OFFSET", 0)
-                # # channel = ""
+            elif msg.note == CC.DJ_BTN_2B and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_toggle("RX_ENABLE", MIDI.KEYDOWN, 1, None)
                 print(f"trx_cmd is {trx_cmd}")
             await tci_listener.send(trx_cmd)
             # print(f"message complet is {msg}")
