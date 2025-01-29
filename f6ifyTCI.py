@@ -424,13 +424,13 @@ async def midi_rx(tci_listener, midi_port):
                 curr_rx = 1
             elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:
                 curr_rx = 0
-            elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:
+            elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:     #Toggle RIT on RX2
                 curr_rx = 1
                 trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
-            elif msg.note == CC.DJ_BTN_SYNC_B and msg.velocity == MIDI.KEYDOWN:
+            elif msg.note == CC.DJ_BTN_SYNC_B and msg.velocity == MIDI.KEYDOWN:     #Toggle RIT on RX1
                 curr_rx = 0
                 trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
-            elif msg.note == CC.DJ_BTN_CUE_B and msg.velocity == MIDI.KEYDOWN:
+            elif msg.note == CC.DJ_BTN_CUE_B and msg.velocity == MIDI.KEYDOWN:      #Clear RIT
                 trx_cmd = f"RIT_OFFSET:{curr_rx},0;"
             elif msg.note == CC.DJ_BTN_AUTOMIX and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = do_toggle("MON_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
