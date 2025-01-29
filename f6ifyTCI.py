@@ -449,11 +449,17 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYUP:
                 trx_cmd = f"TRX:{curr_rx},false;"
             elif msg.note == CC.DJ_BTN_4A and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "RX_FILTER_BAND:0,-200,200;"
+                trx_cmd = "RX_FILTER_BAND:0,-100,100;" # User filter is now 200 Hz Wide
                 mode = get_param("DDS", curr_rx, curr_subx)
                 print(f"mode is {mode}")
             elif msg.note == CC.DJ_BTN_2B and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = do_toggle("RX_ENABLE", MIDI.KEYDOWN, 1, None)
+                print(f"trx_cmd is {trx_cmd}")
+            elif msg.note == CC.DJ_BTN_3B and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_toggle("RX_MUTE", MIDI.KEYDOWN, 0, None)
+                print(f"trx_cmd is {trx_cmd}")
+            elif msg.note == CC.DJ_BTN_4B and msg.velocity == MIDI.KEYDOWN:
+                trx_cmd = do_toggle("RX_MUTE", MIDI.KEYDOWN, 1, None)
                 print(f"trx_cmd is {trx_cmd}")
             await tci_listener.send(trx_cmd)
             # print(f"message complet is {msg}")
