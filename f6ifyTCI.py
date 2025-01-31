@@ -420,10 +420,16 @@ async def midi_rx(tci_listener, midi_port):
                 trx_cmd = f"RX_FILTER_BAND:{curr_rx},-{lower_filter},{higher_filter};"
             await tci_listener.send(trx_cmd)
         except: # I press a button
-            if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:       # Select RX2
-                curr_rx = 1
+            if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB in RX1 
+                curr_rx = 0
+                curr_subx = 1
+                trx_cmd = do_toggle("RX_CHANNEL_ENABLE", MIDI.KEYDOWN, 0, 1)
+            elif msg.note == CC.DJ_BTN_CUE_A and msg.velocity == MIDI.KEYDOWN:     # Equalize VFOs
+                TXFreqVFOA = get_param("VFO", curr_rx, 0)
+                trx_cmd = f"VFO:{curr_rx},1,{TXFreqVFOA};"      # VFO A --> B
             elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:     # Select RX1
                 curr_rx = 0
+                curr_subx = 0
             elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:     # Toggle RIT on RX2
                 curr_rx = 1
                 trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
@@ -447,8 +453,9 @@ async def midi_rx(tci_listener, midi_port):
                 await tci_listener.send(trx_cmd)
                 trx_cmd = f"VFO:{curr_rx},0,{TXFreqVFOB};"      # Now Swap VFO
                 print(f"TXFreq is {TXFreqVFOA} and {TXFreqVFOB}")
-            elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = do_toggle("SPLIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx) # Toggle Split On/Off
+            elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:     # Equalize VFOs
+                TXFreqVFOA = get_param("VFO", curr_rx, 0)
+                trx_cmd = f"VFO:{curr_rx},1,{TXFreqVFOA};"      # VFO A --> B
             elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = f"TRX:{curr_rx},true;"
             elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
