@@ -404,6 +404,8 @@ async def midi_rx(tci_listener, midi_port):
             if msg.control == CC.DJ_CROSSFADER:         # Power 0 to 100%
                 val = (100 * msg.value) / 127
                 trx_cmd = f"DRIVE:{curr_rx},{val};"
+            # elif msg.control == CC.DJ_JOGA:             # Frequency Scroll
+            #     do_freq_scroll(vfo_step, msg.value, curr_rx, curr_subx)
             elif msg.control == CC.DJ_POTVOLUMEA:       # Volume 0 to -60 dB 
                 val = (60 * msg.value) / 127
                 trx_cmd = f"VOLUME:{-val};"
@@ -420,15 +422,13 @@ async def midi_rx(tci_listener, midi_port):
                 trx_cmd = f"RX_FILTER_BAND:{curr_rx},-{lower_filter},{higher_filter};"
             await tci_listener.send(trx_cmd)
         except: # I press a button
-            if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB in RX1 
-                curr_rx = 0
+            if msg.note == CC.DJ_BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB
                 curr_subx = 1
-                trx_cmd = do_toggle("RX_CHANNEL_ENABLE", MIDI.KEYDOWN, 0, 1)
+                trx_cmd = do_toggle("RX_CHANNEL_ENABLE", MIDI.KEYDOWN, curr_rx, 1)
             elif msg.note == CC.DJ_BTN_CUE_A and msg.velocity == MIDI.KEYDOWN:     # Equalize VFOs
                 TXFreqVFOA = get_param("VFO", curr_rx, 0)
                 trx_cmd = f"VFO:{curr_rx},1,{TXFreqVFOA};"      # VFO A --> B
-            elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:     # Select RX1
-                curr_rx = 0
+            elif msg.note == CC.DJ_BTN_SYNC_A and msg.velocity == MIDI.KEYDOWN:     # Select RX
                 curr_subx = 0
             elif msg.note == CC.DJ_BTN_PLAY_B and msg.velocity == MIDI.KEYDOWN:     # Toggle RIT on RX2
                 curr_rx = 1
@@ -453,9 +453,10 @@ async def midi_rx(tci_listener, midi_port):
                 await tci_listener.send(trx_cmd)
                 trx_cmd = f"VFO:{curr_rx},0,{TXFreqVFOB};"      # Now Swap VFO
                 print(f"TXFreq is {TXFreqVFOA} and {TXFreqVFOB}")
-            elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:     # Equalize VFOs
-                TXFreqVFOA = get_param("VFO", curr_rx, 0)
-                trx_cmd = f"VFO:{curr_rx},1,{TXFreqVFOA};"      # VFO A --> B
+            elif msg.note == CC.DJ_BTN_2A and msg.velocity == MIDI.KEYDOWN:     # Toggle RX focus
+                if curr_rx == 0:
+                    curr_rx = 1
+                else: curr_rx = 0
             elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = f"TRX:{curr_rx},true;"
             elif msg.note == CC.DJ_BTN_3A and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
