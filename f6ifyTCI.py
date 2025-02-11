@@ -377,21 +377,13 @@ async def midi_rx(tci_listener, midi_port):
         vfo_step = 25
         # vfo_stepB = 100
         knob_scroll_map = { CC.DJ_JOGA: [ partial(do_freq_scroll, vfo_step),
-                                          None,None,None,None,None,None,None
-                                        ],
+                                           None,None,None,None,None,None,None
+                                         ],
                             # CC.DJ_SHIFTJOGA: [partial(do_freq_scroll, vfo_stepB), Button shift is used to change the mode
                             #              None, None, None, None, None, None, None ],
                             CC.DJ_JOGB: [ partial(do_generic_scroll, "RIT_OFFSET", 10),
                                           None, None, None, None, None, None, None]
-                            # CC.DJ_POTBASSA: [partial(do_generic_scroll, "VOLUME", 2),
-                            #                 partial(do_filter_scroll, FILTERSIDE.LEFT, 500, curr_rx),
-                            #                 do_mod_scroll,
-                            #                 do_band_scroll,
-                            #                 partial(do_generic_scroll, "DRIVE", 2),
-                            #                 partial(do_generic_scroll, "VOLUME", 2),
-                            #                 partial(do_generic_scroll, "MON_VOLUME", 2),
-                            #              ]
-                          }
+                           }
 
         try: # A JOG or a potentiometer has been turned
             trx_cmd = ""
@@ -406,6 +398,8 @@ async def midi_rx(tci_listener, midi_port):
                 trx_cmd = f"DRIVE:{curr_rx},{val};"
             # elif msg.control == CC.DJ_JOGA:             # Frequency Scroll
             #     do_freq_scroll(vfo_step, msg.value, curr_rx, curr_subx)
+            # elif msg.control == CC.DJ_JOGB:             # Frequency Scroll
+            #     do_generic_scroll("RIT_OFFSET", 10, msg.value, curr_rx, curr_subx)
             elif msg.control == CC.DJ_POTVOLUMEA:       # Volume 0 to -60 dB 
                 val = (60 * msg.value) / 127
                 trx_cmd = f"VOLUME:{-val};"
