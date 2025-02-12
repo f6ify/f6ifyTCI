@@ -1,0 +1,16 @@
+# Ignore virtual environment directories
+venv/
+env/
+
+# Ignore IDE/editor specific files
+.vscode/
+.idea/
+
+# Ignore log files
+*.log
+# Ignore PDF files
+*.pdf
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
