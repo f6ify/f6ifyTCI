@@ -192,7 +192,7 @@ def do_freq_scroll(incr, val, rx, subrx):
     subrx0_if = get_param("IF", rx, 0)
     if_lims = get_param("IF_LIMITS")
 
-    print(f"rx_dds is {rx_dds}, subrx_if is {subrx_if}, su")
+    # print(f"rx_dds is {rx_dds}, subrx_if is {subrx_if}, su")
 
     if val == MIDI.CLICK:
         if subrx == 0:
@@ -354,53 +354,29 @@ async def midi_rx(tci_listener, midi_port):
         #            DJ.BTN_1B: KNOBPLANE.VOLUME,
         #            DJ.BTN_2B: KNOBPLANE.MONITOR,
         #          }
-
-        # Keypress TCI Toggles/Momentaries
-        # key_map = { DJ.BTN_1A: [partial(do_toggle, "RX_APF_ENABLE")],
-        #             DJ.BTN_2A: [partial(do_toggle, "RX_NB_ENABLE")],
-        #             CC.KEY_R3_C2: partial(do_toggle, "RX_BIN_ENABLE")
-        #             # CC.KEY_R3_C3: partial(do_toggle, "RX_NR_ENABLE"),
-        #             # CC.KEY_R3_C4: partial(do_toggle, "RX_ANC_ENABLE"),
-        #             # CC.KEY_R4_C3: partial(do_momentary, "TRX"),
-        #             # CC.KEY_R4_C4: partial(do_momentary, "TUNE"),
-        #           }
-
-        # Knob Clicks
-        # knob_click_map = { DJ.BTN_1A: [ partial(do_toggle, "RIT_ENABLE"),
-        #                                    None,
-        #                                    None,
-        #                                    partial(do_generic_set, "DRIVE", 50),
-        #                                    partial(do_toggle, "MUTE"),
-        #                                    partial(do_toggle, "MON_ENABLE"),
-        #                                  ],
-        #  }
         # Knob Scrolls
         vfo_step = 25
+        rit_step = 10
         # vfo_stepB = 100
-        knob_scroll_map = { DJ.JOGA: [ partial(do_freq_scroll, vfo_step),
-                                           None,None,None,None,None,None,None
-                                         ],
-                            # DJ.SHIFTJOGA: [partial(do_freq_scroll, vfo_stepB), Button shift is used to change the mode
-                            #              None, None, None, None, None, None, None ],
-                            DJ.JOGB: [ partial(do_generic_scroll, "RIT_OFFSET", 10),
-                                          None, None, None, None, None, None, None]
-                           }
-
+        # knob_scroll_map = { DJ.JOGA: [ partial(do_freq_scroll, vfo_step),
+        #                                    None,None,None,None,None,None,None
+        #                                  ],
+        #                     DJ.JOGB: [ partial(do_generic_scroll, "RIT_OFFSET", rit_step),
+        #                                   None, None, None, None, None, None, None]
+        #                    }
         try: # A JOG or a potentiometer has been turned
             trx_cmd = ""
-            # if msg.control in key_map:
-            #     await run_cmds(tci_listener, key_map[msg.control](msg.value, curr_rx, curr_subx))
-            if (msg.value == MIDI.ENCDOWN or msg.value == MIDI.ENCUP) and msg.control in knob_scroll_map:
-                fn = knob_scroll_map[msg.control][knob_plane]
-                if fn is not None:
-                    await run_cmds(tci_listener, fn(msg.value, curr_rx, curr_subx))
+            # if (msg.value == MIDI.ENCDOWN or msg.value == MIDI.ENCUP) and msg.control in knob_scroll_map:
+            #     fn = knob_scroll_map[msg.control][knob_plane]
+            #     if fn is not None:
+            #         await run_cmds(tci_listener, fn(msg.value, curr_rx, curr_subx))
             if msg.control == DJ.CROSSFADER:         # Power 0 to 100%
                 val = (100 * msg.value) / 127
                 trx_cmd = f"DRIVE:{curr_rx},{val};"
-            # elif msg.control == DJ.JOGA:             # Frequency Scroll
-            #     do_freq_scroll(vfo_step, msg.value, curr_rx, curr_subx)
-            # elif msg.control == DJ.JOGB:             # Frequency Scroll
-            #     do_generic_scroll("RIT_OFFSET", 10, msg.value, curr_rx, curr_subx)
+            elif msg.control == DJ.JOGA:             # Frequency Scroll
+                trx_cmd = do_freq_scroll(vfo_step, msg.value, curr_rx, curr_subx)
+            elif msg.control == DJ.JOGB:             # Frequency Scroll
+                trx_cmd = do_generic_scroll("RIT_OFFSET", rit_step, msg.value, curr_rx, curr_subx)
             elif msg.control == DJ.POTVOLUMEA:       # Volume 0 to -60 dB 
                 val = (60 * msg.value) / 127
                 trx_cmd = f"VOLUME:{-val};"
