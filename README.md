@@ -1,8 +1,8 @@
 
 Modification by Philippe F6IFY to use the DJControl Compact midi device
 
-This script is a modification of the original script from the EESDR project
-by Matthew McDougal, KA0S
+This script is a modification of the original script from ![the EESDR project
+by Matthew McDougal, KA0S](https://github.com/ars-ka0s/eesdr-tci)
 
 I use Python 3.10, mido doesn't works with python 3.13, I hope it will change in the futur!
 
