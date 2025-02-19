@@ -5,6 +5,8 @@
 # See the PDF file for the mapping of the DJControl Compact from Hercules
 # Version 0.1 Ph. Nouchi - F6IFY le 15 Janvier 2025
 # Version 0.2 Ph. Nouchi - F6IFY le 12 Février 2025
+# Version 0.3 Ph. Nouchi - F6IFY le 19 Février 2025
+#    - Add Change of the vfoStep variable with button 2A
 
 from enum import IntEnum
 from functools import partial
@@ -340,6 +342,7 @@ async def midi_rx(tci_listener, midi_port):
     cb, stream = midi_stream()
     mido.open_input(midi_port, virtual = False, callback=cb)
     print(f"cb is {cb} and stream is {stream}", )
+    vfo_step = 25
     async for msg in stream:
         # if not msg.is_cc():
         #     msg.note = 0
@@ -355,7 +358,6 @@ async def midi_rx(tci_listener, midi_port):
         #            DJ.BTN_2B: KNOBPLANE.MONITOR,
         #          }
         # Knob Scrolls
-        vfo_step = 25
         rit_step = 10
         # vfo_stepB = 100
         # knob_scroll_map = { DJ.JOGA: [ partial(do_freq_scroll, vfo_step),
@@ -425,9 +427,10 @@ async def midi_rx(tci_listener, midi_port):
                 trx_cmd = f"VFO:{curr_rx},0,{TXFreqVFOB};"      # Now Swap VFO
                 print(f"TXFreq is {TXFreqVFOA} and {TXFreqVFOB}")
             elif msg.note == DJ.BTN_2A and msg.velocity == MIDI.KEYDOWN:     # Toggle RX focus
-                if curr_rx == 0:
-                    curr_rx = 1
-                else: curr_rx = 0
+                if vfo_step == 100:
+                    vfo_step = 25
+                else: vfo_step += 25
+                print(f"vof_step is {vfo_step}")
             elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = f"TRX:{curr_rx},true;"
             elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
