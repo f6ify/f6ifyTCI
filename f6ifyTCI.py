@@ -151,7 +151,7 @@ params_dict = {}
 
 async def update_params(name, rx, subrx, params):
     global params_dict
-    print("TCI", name, rx, subrx, params)
+    # print("TCI", name, rx, subrx, params)
     if rx not in params_dict:
         params_dict[rx] = {}
     if subrx not in params_dict[rx]:
@@ -281,19 +281,19 @@ def do_enable_toggle(val, rx, subrx):
 def do_toggle(name, val, rx, subrx):
     if val == MIDI.KEYDOWN or val == MIDI.CLICK:
         cv = not get_param(name, rx, subrx)
-        print(f"cv in do_toggle is {cv}")
+        # print(f"cv in do_toggle is {cv}")
         return [ tci.COMMANDS[name].prepare_string(TciCommandSendAction.WRITE, rx=rx, sub_rx=subrx, params=[cv]) ]
     else:
         return []
 
 def do_momentary(name, val, rx, subrx):
     cv = (val == MIDI.KEYDOWN)
-    print(f"cv in do_momentary is {cv}")
+    # print(f"cv in do_momentary is {cv}")
     return [ tci.COMMANDS[name].prepare_string(TciCommandSendAction.WRITE, rx=rx, sub_rx=subrx, params=[cv]) ]
 
 def do_generic_scroll(name, incr, val, rx, subrx):
     cv = get_param(name, rx, subrx)
-    print(f"cv in do_generic_scroll is {cv}")
+    # print(f"cv in do_generic_scroll is {cv}")
 
     if val == MIDI.ENCDOWN:
         cv -= incr
@@ -341,13 +341,19 @@ async def midi_rx(tci_listener, midi_port):
 
     cb, stream = midi_stream()
     mido.open_input(midi_port, virtual = False, callback=cb)
-    print(f"cb is {cb} and stream is {stream}", )
-    vfo_step = 25
+    # print(f"cb is {cb} and stream is {stream}", )
+    mod = get_param("MODULATION", 0, 0)
+    print(f"mod is {mod}")
+    if mod == "CW":
+        vfo_step = 25
+    else:
+        vfo_step = 100
+    print(f"vfo_step is {vfo_step}")
     async for msg in stream:
         # if not msg.is_cc():
         #     msg.note = 0
         #     continue
-        print(f"MIDI is {msg}")
+        # print(f"MIDI is {msg}")
 
         # Knob Plane Toggles
         # kp_map = { DJ.BTN_1A: KNOBPLANE.FILTER,
@@ -428,9 +434,11 @@ async def midi_rx(tci_listener, midi_port):
                 print(f"TXFreq is {TXFreqVFOA} and {TXFreqVFOB}")
             elif msg.note == DJ.BTN_2A and msg.velocity == MIDI.KEYDOWN:     # Toggle RX focus
                 if vfo_step == 100:
+                    vfo_step = 200
+                elif vfo_step == 200:
                     vfo_step = 25
                 else: vfo_step += 25
-                print(f"vof_step is {vfo_step}")
+                print(f"vfo_step is {vfo_step}")
             elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYDOWN:
                 trx_cmd = f"TRX:{curr_rx},true;"
             elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
