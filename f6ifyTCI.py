@@ -6,7 +6,10 @@
 # Version 0.1 Ph. Nouchi - F6IFY le 15 Janvier 2025
 # Version 0.2 Ph. Nouchi - F6IFY le 12 Février 2025
 # Version 0.3 Ph. Nouchi - F6IFY le 19 Février 2025
-#    - Add Change of the vfoStep variable with button 2A
+#   - Add Change of the vfoStep variable with button 2A
+# Version 0.4 Ph. Nouchi - F6IFY le 21 Février 2025
+#   - Mode of the code for button 2A
+#   - Add Split toggle on button 1B
 
 from enum import IntEnum
 from functools import partial
@@ -433,13 +436,11 @@ async def midi_rx(tci_listener, midi_port):
                 trx_cmd = f"VFO:{curr_rx},0,{TXFreqVFOB};"      # Now Swap VFO
                 print(f"TXFreq is {TXFreqVFOA} and {TXFreqVFOB}")
             elif msg.note == DJ.BTN_2A and msg.velocity == MIDI.KEYDOWN:     # Toggle RX focus
-                if vfo_step == 100:
-                    vfo_step = 200
-                elif vfo_step == 200:
+                if vfo_step == 200:
                     vfo_step = 25
-                else: vfo_step += 25
+                else: vfo_step *= 2
                 print(f"vfo_step is {vfo_step}")
-            elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYDOWN:
+            elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYDOWN:    # TX on when button down, RX is back when button up
                 trx_cmd = f"TRX:{curr_rx},true;"
             elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
                 trx_cmd = f"TRX:{curr_rx},false;"
@@ -447,6 +448,9 @@ async def midi_rx(tci_listener, midi_port):
                 trx_cmd = "RX_FILTER_BAND:0,-100,100;"                      # User filter is now 200 Hz Wide
                 mode = get_param("DDS", curr_rx, curr_subx)
                 print(f"mode is {mode}")
+            elif msg.note == DJ.BTN_1B and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB
+                curr_subx = 1
+                trx_cmd = do_toggle("SPLIT_ENABLE", MIDI.KEYDOWN, curr_rx, 1)
             elif msg.note == DJ.BTN_2B and msg.velocity == MIDI.KEYDOWN: # Toggle RX2 On/Off
                 trx_cmd = do_toggle("RX_ENABLE", MIDI.KEYDOWN, 1, None)
                 print(f"trx_cmd is {trx_cmd}")
