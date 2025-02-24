@@ -3,13 +3,18 @@
 # by Matthew McDougal, KA0S
 # Philippe Nouchi - 9th December 2024
 # See the PDF file for the mapping of the DJControl Compact from Hercules
-# Version 0.1 Ph. Nouchi - F6IFY le 15 Janvier 2025
-# Version 0.2 Ph. Nouchi - F6IFY le 12 Février 2025
-# Version 0.3 Ph. Nouchi - F6IFY le 19 Février 2025
-#   - Add Change of the vfoStep variable with button 2A
+
+# Version 1.0 Ph. Nouchi - F6IFY le 24 Février 2025
+# This version seems stable so I call it 1.0
+#   - Add a filtre 2.4khz for SSB contest
 # Version 0.4 Ph. Nouchi - F6IFY le 21 Février 2025
 #   - Mode of the code for button 2A
 #   - Add Split toggle on button 1B
+# Version 0.3 Ph. Nouchi - F6IFY le 19 Février 2025
+#   - Add Change of the vfoStep variable with button 2A
+# Version 0.2 Ph. Nouchi - F6IFY le 12 Février 2025
+# Version 0.1 Ph. Nouchi - F6IFY le 15 Janvier 2025
+
 
 from enum import IntEnum
 from functools import partial
@@ -445,9 +450,15 @@ async def midi_rx(tci_listener, midi_port):
             elif msg.note == DJ.BTN_3A and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
                 trx_cmd = f"TRX:{curr_rx},false;"
             elif msg.note == DJ.BTN_4A and msg.velocity == MIDI.KEYDOWN:
-                trx_cmd = "RX_FILTER_BAND:0,-100,100;"                      # User filter is now 200 Hz Wide
-                mode = get_param("DDS", curr_rx, curr_subx)
-                print(f"mode is {mode}")
+                mod = get_param("MODULATION", curr_rx, curr_subx)
+                print(f"mod is {mod}")
+                if mod == "CW":
+                    trx_cmd = "RX_FILTER_BAND:0,-100,100;"                      # User filter is now 200 Hz Wide
+                elif mod == "LSB":
+                    trx_cmd = "RX_FILTER_BAND:0,-2400,10;"                    # User filter is now 2400 Hz Wide
+                elif mod == "USB":
+                    trx_cmd = "RX_FILTER_BAND:0,10,2400;"                       # User filter is now 2400 Hz Wide
+                    
             elif msg.note == DJ.BTN_1B and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB
                 curr_subx = 1
                 trx_cmd = do_toggle("SPLIT_ENABLE", MIDI.KEYDOWN, curr_rx, 1)
