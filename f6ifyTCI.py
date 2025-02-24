@@ -350,7 +350,7 @@ async def midi_rx(tci_listener, midi_port):
     cb, stream = midi_stream()
     mido.open_input(midi_port, virtual = False, callback=cb)
     # print(f"cb is {cb} and stream is {stream}", )
-    mod = get_param("MODULATION", 0, 0)
+    mod = get_param("MODULATION", curr_rx, curr_subx)
     print(f"mod is {mod}")
     if mod == "CW":
         vfo_step = 25
@@ -358,34 +358,9 @@ async def midi_rx(tci_listener, midi_port):
         vfo_step = 100
     print(f"vfo_step is {vfo_step}")
     async for msg in stream:
-        # if not msg.is_cc():
-        #     msg.note = 0
-        #     continue
-        # print(f"MIDI is {msg}")
-
-        # Knob Plane Toggles
-        # kp_map = { DJ.BTN_1A: KNOBPLANE.FILTER,
-        #            DJ.BTN_2A: KNOBPLANE.MOD,
-        #            DJ.BTN_3A: KNOBPLANE.BAND,
-        #            DJ.BTN_4A: KNOBPLANE.DRIVE,
-        #            DJ.BTN_1B: KNOBPLANE.VOLUME,
-        #            DJ.BTN_2B: KNOBPLANE.MONITOR,
-        #          }
-        # Knob Scrolls
         rit_step = 10
-        # vfo_stepB = 100
-        # knob_scroll_map = { DJ.JOGA: [ partial(do_freq_scroll, vfo_step),
-        #                                    None,None,None,None,None,None,None
-        #                                  ],
-        #                     DJ.JOGB: [ partial(do_generic_scroll, "RIT_OFFSET", rit_step),
-        #                                   None, None, None, None, None, None, None]
-        #                    }
         try: # A JOG or a potentiometer has been turned
             trx_cmd = ""
-            # if (msg.value == MIDI.ENCDOWN or msg.value == MIDI.ENCUP) and msg.control in knob_scroll_map:
-            #     fn = knob_scroll_map[msg.control][knob_plane]
-            #     if fn is not None:
-            #         await run_cmds(tci_listener, fn(msg.value, curr_rx, curr_subx))
             if msg.control == DJ.CROSSFADER:         # Power 0 to 100%
                 val = (100 * msg.value) / 127
                 trx_cmd = f"DRIVE:{curr_rx},{val};"
