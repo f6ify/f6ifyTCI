@@ -6,6 +6,8 @@ by Matthew McDougal, KA0S](https://github.com/ars-ka0s/eesdr-tci)
 
 I use Python 3.10, I don't know exactly why but my script does not work with python 3.13, I hope it will change in the futur!
 
-See the PDF file for the mapping of the DJControl Compact from Hercules.
+See the PNG file for the mapping of the DJControl Compact from Hercules.
 ![DJControl Compact Image](./DJ-Control.jpg)
 ![DJControl Compact Mapping PDF](DJControlMapping.PNG)
+
+Soon the same for the DJControl Starlight...
