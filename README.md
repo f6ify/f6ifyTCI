@@ -11,3 +11,4 @@ See the PNG file for the mapping of the DJControl Compact from Hercules.
 ![DJControl Compact Mapping PDF](DJControlMapping.PNG)
 
 Soon the same for the DJControl Starlight...
+![DJControl Starlight Image](./DJStarlight.jpg)
