@@ -584,6 +584,18 @@ async def midi_rx(tci_listener, midi_port):
                         elif mod == "USB":
                             trx_cmd = "RX_FILTER_BAND:0,10,3000;"
                             print("USB Filter is 3 kHz")
+                elif msg.channel == 7:
+                    if msg.note == cc.BTN_1 and msg.velocity == MIDI.KEYDOWN: # Toggle Split
+                        curr_subx = 1
+                        trx_cmd = do_toggle("SPLIT_ENABLE", MIDI.KEYDOWN, curr_rx, 1)
+                    elif msg.note == cc.BTN_2 and msg.velocity == MIDI.KEYDOWN: # Toggle RX2 On/Off
+                        trx_cmd = do_toggle("RX_ENABLE", MIDI.KEYDOWN, 1, None)
+                    elif msg.note == cc.BTN_3 and msg.velocity == MIDI.KEYDOWN:
+                        trx_cmd = do_toggle("RX_MUTE", MIDI.KEYDOWN, 0, None)
+                    elif msg.note == cc.BTN_4 and msg.velocity == MIDI.KEYDOWN:
+                        trx_cmd = do_toggle("RX_MUTE", MIDI.KEYDOWN, 1, None)
+                    print(f"trx_cmd is {trx_cmd}")
+
                 # print("It is the starlight and except")
         await tci_listener.send(trx_cmd)
 async def main(uri, midi_port):
