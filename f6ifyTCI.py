@@ -4,6 +4,9 @@
 # Philippe Nouchi - 9th December 2024
 # See the PDF file for the mapping of the DJControl Compact from Hercules
 
+# Version 1.2 Ph. Nouchi - F6IFY le 4 mars 2025
+#   - Add the possibility to change the filter width with the button 4
+#   - The value of the filter depend of the Hot CUE or Loop button
 # Version 1.1 Ph. Nouchi - F6IFY le 28 Février 2025
 #   - Include the DJControl Starlight from Hercules
 # Version 1.0 Ph. Nouchi - F6IFY le 24 Février 2025
@@ -91,15 +94,12 @@ class DJ(IntEnum): # Value for the DJControl compact from hercule
 class DJS(IntEnum): # Value for the DJControl Starlight from hercule
     # ** JOG **
     JOGORPOT = 176
-    JOGA = 9
-    SHIFTJOGA = 55
-    JOGB = 49
-    SHIFTJOGB = 56
+    JOG = 10
     # ** *Potentiometres ** *
     POTVOLUME1 = 3
     POTVOLUME2 = 4
-    POTMEDIUM = 59
-    POTBASS = 60
+    POTMEDIUM = 0
+    POTBASS = 2
     # ** *Cross - Fader ** *
     CROSSFADER = 0
     # ** *Buttons ** *
@@ -111,6 +111,10 @@ class DJS(IntEnum): # Value for the DJControl Starlight from hercule
     BTN_2 = 1
     BTN_3 = 2
     BTN_4 = 3
+    BTN_1L = 16
+    BTN_2L = 17
+    BTN_3L = 18
+    BTN_4L = 19
     BTN_BASS_FILTER = 1
     BTN_SHIFT = 3
     BTN_HELMET = 12
@@ -125,14 +129,14 @@ class MODS:
     WHEEL_LEFT  = {"AM": -25, "LSB": -25, "USB":  0, "CW": -25, "NFM": -25, "DIGL": -25, "DIGU":  0, "WFM": -250}
     WHEEL_RIGHT = {"AM":  25, "LSB":   0, "USB": 25, "CW":  25, "NFM":  25, "DIGL":   0, "DIGU": 25, "WFM":  250}
 
-class KNOBPLANE(IntEnum):
-    BASE = 0
-    FILTER = 1
-    MOD = 2
-    BAND = 3
-    DRIVE = 4
-    VOLUME = 5
-    MONITOR = 6
+# class KNOBPLANE(IntEnum):
+#     BASE = 0
+#     FILTER = 1
+#     MOD = 2
+#     BAND = 3
+#     DRIVE = 4
+#     VOLUME = 5
+#     MONITOR = 6
 
 class FILTERSIDE(IntEnum):
     LEFT  = -1
@@ -394,10 +398,12 @@ async def midi_rx(tci_listener, midi_port):
         print(f"MIDI is {msg}")
         rit_step = 10
         trx_cmd = ""
+        strmsg = str(msg)
+        isButton = strmsg[0:7]
+        # print(isButton)    
         if midi_port == "DJControl Compact 0":
             cc = DJ
-            try: # A JOG or a potentiometer has been turned
-                
+            if isButton == "control": # A JOG or a potentiometer has been turned
                 if msg.control == cc.CROSSFADER:         # Power 0 to 100%
                     val = (100 * msg.value) / 127
                     trx_cmd = f"DRIVE:{curr_rx},{val};"
@@ -420,7 +426,7 @@ async def midi_rx(tci_listener, midi_port):
                     higher_filter = msg.value * 5
                     trx_cmd = f"RX_FILTER_BAND:{curr_rx},-{lower_filter},{higher_filter};"
                 # await tci_listener.send(trx_cmd)
-            except: # I press a button
+            elif isButton == "note_on": # I press a button
                 if msg.note == cc.BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB
                     curr_subx = 1
                     trx_cmd = do_toggle("RX_CHANNEL_ENABLE", MIDI.KEYDOWN, curr_rx, 1)
@@ -485,25 +491,31 @@ async def midi_rx(tci_listener, midi_port):
                     print(f"trx_cmd is {trx_cmd}")
                 # await tci_listener.send(trx_cmd)
                 # print(f"message complet is {msg}")
-        else: 
-            cc = DJS # It is the starlight
-            try:
-                if msg.control == cc.CROSSFADER:         # Power 0 to 100%
-                    val = (100 * msg.value) / 127
-                    trx_cmd = f"DRIVE:{curr_rx},{val};"
-                elif msg.control == cc.POTVOLUME1:       # Volume 0 to -60 dB 
-                    val = (60 * msg.value) / 127
-                    trx_cmd = f"VOLUME:{-val};"
-                elif msg.control == cc.POTVOLUME2:       # Monitor Volume 0 to -60 dB
-                    val = (60 * msg.value) / 127
-                    trx_cmd = f"MON_VOLUME:{-val};"
-                if msg.channel == 1:     # Left side of the DJControl Starlight
-                    if msg.control == 9 or msg.control == 10:             # Frequency Scroll
+        elif midi_port == "DJControl Starlight 0": 
+            cc = DJS # It is the starlight (No other device is supported)
+            # print(isButton)
+            if isButton == "control":
+                if msg.channel == 0:
+                    if msg.control == cc.CROSSFADER:         # Power 0 to 100%
+                        val = (100 * msg.value) / 127
+                        trx_cmd = f"DRIVE:{curr_rx},{val};"
+                    elif msg.control == cc.POTVOLUME1:       # Volume 0 to -60 dB 
+                        val = (60 * msg.value) / 127
+                        trx_cmd = f"VOLUME:{-val};"
+                    elif msg.control == cc.POTVOLUME2:       # Monitor Volume 0 to -60 dB
+                        val = (60 * msg.value) / 127
+                        trx_cmd = f"MON_VOLUME:{-val};"
+                elif msg.channel == 1:     # Left side of the DJControl Starlight
+                    if msg.control == cc.JOG:             # Frequency Scroll
                         trx_cmd = do_freq_scroll(vfo_step, msg.value, curr_rx, curr_subx)
+                    elif msg.control == cc.POTBASS:           # Filter Scroll
+                        trx_cmd = do_filter_scroll(FILTERSIDE.LEFT, msg.value * 10, curr_rx, curr_subx)
                 elif msg.channel == 2:     # Right side of the DJControl Starlight
-                    if msg.control == 9 or msg.control == 10:             # Frequency Scroll
+                    if msg.control == cc.JOG:             # Frequency Scroll
                         trx_cmd = do_generic_scroll("RIT_OFFSET", rit_step, msg.value, curr_rx, curr_subx)
-            except:
+                    elif msg.control == cc.POTBASS:           # Filter Scroll
+                        trx_cmd = do_filter_scroll(FILTERSIDE.RIGHT, msg.value * 10, curr_rx, curr_subx)
+            elif isButton == "note_on": # Starlight buttons
                 if msg.channel == 0:
                     if msg.note == cc.BTN_SHIFT and msg.velocity == MIDI.KEYDOWN:
                         trx_cmd = do_mod_scroll(MIDI.ENCDOWN, curr_rx, curr_subx)
@@ -553,10 +565,25 @@ async def midi_rx(tci_listener, midi_port):
                         print(f"mod is {mod}")
                         if mod == "CW":
                             trx_cmd = "RX_FILTER_BAND:0,-100,100;"
+                            print("CW Filter is 200 Hz")
                         elif mod == "LSB":
                             trx_cmd = "RX_FILTER_BAND:0,-2400,10;"
+                            print("LSB Filter is 2400 Hz")
                         elif mod == "USB":
                             trx_cmd = "RX_FILTER_BAND:0,10,2400;"
+                            print("USB Filter is 2400 Hz")
+                    elif msg.note == cc.BTN_4L and msg.velocity == MIDI.KEYDOWN: # Change filter
+                        mod = get_param("MODULATION", curr_rx, curr_subx)
+                        print(f"mod is {mod}")
+                        if mod == "CW":
+                            trx_cmd = "RX_FILTER_BAND:0,-250,250;"
+                            print("CW Filter is 500 Hz")
+                        elif mod == "LSB":
+                            trx_cmd = "RX_FILTER_BAND:0,-3000,10;"
+                            print("LSB Filter is 3 kHz")
+                        elif mod == "USB":
+                            trx_cmd = "RX_FILTER_BAND:0,10,3000;"
+                            print("USB Filter is 3 kHz")
                 # print("It is the starlight and except")
         await tci_listener.send(trx_cmd)
 async def main(uri, midi_port):
