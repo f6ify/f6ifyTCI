@@ -10,6 +10,6 @@ See the PNG file for the mapping of the DJControl Compact from Hercules.
 ![DJControl Compact Image](./DJ-Control.jpg)
 ![DJControl Compact Mapping](DJControlMapping.PNG)
 
-Soon the same for the DJControl Starlight...
+And the same for the DJControl Starlight...
 ![DJControl Starlight Image](./DJStarlight.jpg)
 ![DJControl Compact Mapping](Starlight-sunSDR-v1.2.PNG)
