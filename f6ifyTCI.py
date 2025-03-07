@@ -379,6 +379,18 @@ def midi_stream():
             yield await queue.get()
     return callback, stream()
 
+def set_power(msg, curr_rx):
+    val = int((100 * msg.value) / 127)
+    trx_cmd = f"DRIVE:{curr_rx},{val};"
+    print(f"Drive is {val}% of 20 Watts, soit {val * 20 / 100} Watts")
+    return trx_cmd
+
+def set_volume(msg, curr_rx):   # Volume 0 to -60 dB 
+    val = int((60 * msg.value) / 127)
+    print(f"Volume is -{val} dB")
+    trx_cmd = f"VOLUME:{-val};"
+    return trx_cmd
+
 async def midi_rx(tci_listener, midi_port):
     global params_dict, trx_cmd
     lower_filter = 200
@@ -410,15 +422,14 @@ async def midi_rx(tci_listener, midi_port):
             cc = DJ
             if isButton == "control": # A JOG or a potentiometer has been turned
                 if msg.control == cc.CROSSFADER:         # Power 0 to 100%
-                    val = (100 * msg.value) / 127
-                    trx_cmd = f"DRIVE:{curr_rx},{val};"
+                    trx_cmd = set_power(msg, curr_rx)
+                    debug = False
                 elif msg.control == cc.JOGA:             # Frequency Scroll
                     trx_cmd = do_freq_scroll(vfo_step, msg.value, curr_rx, curr_subx)
                 elif msg.control == cc.JOGB:             # Frequency Scroll
                     trx_cmd = do_generic_scroll("RIT_OFFSET", rit_step, msg.value, curr_rx, curr_subx)
                 elif msg.control == cc.POTVOLUMEA:       # Volume 0 to -60 dB 
-                    val = (60 * msg.value) / 127
-                    trx_cmd = f"VOLUME:{-val};"
+                    trx_cmd = set_volume(msg, curr_rx)
                 elif msg.control == cc.POTVOLUMEB:       # Monitor Volume 0 to -60 dB
                     val = (60 * msg.value) / 127
                     trx_cmd = f"MON_VOLUME:{-val};"
@@ -502,13 +513,10 @@ async def midi_rx(tci_listener, midi_port):
             if isButton == "control":
                 if msg.channel == 0:
                     if msg.control == cc.CROSSFADER:         # Power 0 to 100%
-                        val = int((100 * msg.value) / 127)
-                        trx_cmd = f"DRIVE:{curr_rx},{val};"
+                        trx_cmd = set_power(msg, curr_rx)
                         debug = False
-                        print(f"Drive is {val}% of 20 Watts, soit {val * 20 / 100} Watts")
                     elif msg.control == cc.POTVOLUME1:       # Volume 0 to -60 dB 
-                        val = (60 * msg.value) / 127
-                        trx_cmd = f"VOLUME:{-val};"
+                        trx_cmd = set_volume(msg, curr_rx)
                     elif msg.control == cc.POTVOLUME2:       # Monitor Volume 0 to -60 dB
                         val = (60 * msg.value) / 127
                         trx_cmd = f"MON_VOLUME:{-val};"
