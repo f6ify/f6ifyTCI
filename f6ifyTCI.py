@@ -1,9 +1,12 @@
 # modification by Philippe F6IFY to use the DJControl Compact midi device
+# or the DJControl Starlight midi device from Hercules
 # This script is a modification of the original script from the EESDR project
-# by Matthew McDougal, KA0S
-# Philippe Nouchi - 9th December 2024
-# See the PDF file for the mapping of the DJControl Compact from Hercules
+# by Matthew McDougal, KA0S Thanks to him for his work
+# Philippe Nouchi - project started on the 9th December 2024
 
+# Version 1.3 Ph. Nouchi - F6IFY le 7 mars 2025
+#   - PTT with button 3 if hot cue is lit
+#   - Drive is now in percentage and watts on the console display
 # Version 1.2 Ph. Nouchi - F6IFY le 4 mars 2025
 #   - Add the possibility to change the filter width with the button 4
 #   - The value of the filter depend of the Hot CUE or Loop button
@@ -19,7 +22,6 @@
 #   - Add Change of the vfoStep variable with button 2A
 # Version 0.2 Ph. Nouchi - F6IFY le 12 Février 2025
 # Version 0.1 Ph. Nouchi - F6IFY le 15 Janvier 2025
-
 
 from enum import IntEnum
 from functools import partial
@@ -117,6 +119,7 @@ class DJS(IntEnum): # Value for the DJControl Starlight from hercule
     BTN_4L = 19
     BTN_BASS_FILTER = 1
     BTN_SHIFT = 3
+    BTN_JOG = 8
     BTN_HELMET = 12
     BTN_HOT = 15
     BTN_LOOP = 16
@@ -383,7 +386,8 @@ async def midi_rx(tci_listener, midi_port):
     curr_subx = 0
     curr_rx = 0
     knob_plane = 0
-
+    debug = True
+    key = False
     cb, stream = midi_stream()
     mido.open_input(midi_port, virtual = False, callback=cb)
     # print(f"cb is {cb} and stream is {stream}", )
@@ -395,11 +399,12 @@ async def midi_rx(tci_listener, midi_port):
         vfo_step = 100
     print(f"vfo_step is {vfo_step}")
     async for msg in stream:
-        print(f"MIDI is {msg}")
+        if debug : print(f"MIDI is {msg}")
         rit_step = 10
         trx_cmd = ""
         strmsg = str(msg)
         isButton = strmsg[0:7]
+        
         # print(isButton)    
         if midi_port == "DJControl Compact 0":
             cc = DJ
@@ -426,7 +431,7 @@ async def midi_rx(tci_listener, midi_port):
                     higher_filter = msg.value * 5
                     trx_cmd = f"RX_FILTER_BAND:{curr_rx},-{lower_filter},{higher_filter};"
                 # await tci_listener.send(trx_cmd)
-            elif isButton == "note_on": # I press a button
+            elif isButton == "note_on": # I press a button on the DJControl Compact
                 if msg.note == cc.BTN_PLAY_A and msg.velocity == MIDI.KEYDOWN:       # Listen with VFOB
                     curr_subx = 1
                     trx_cmd = do_toggle("RX_CHANNEL_ENABLE", MIDI.KEYDOWN, curr_rx, 1)
@@ -497,8 +502,10 @@ async def midi_rx(tci_listener, midi_port):
             if isButton == "control":
                 if msg.channel == 0:
                     if msg.control == cc.CROSSFADER:         # Power 0 to 100%
-                        val = (100 * msg.value) / 127
+                        val = int((100 * msg.value) / 127)
                         trx_cmd = f"DRIVE:{curr_rx},{val};"
+                        debug = False
+                        print(f"Drive is {val}% of 20 Watts, soit {val * 20 / 100} Watts")
                     elif msg.control == cc.POTVOLUME1:       # Volume 0 to -60 dB 
                         val = (60 * msg.value) / 127
                         trx_cmd = f"VOLUME:{-val};"
@@ -532,6 +539,15 @@ async def midi_rx(tci_listener, midi_port):
                         curr_subx = 0
                     elif msg.note == cc.BTN_HELMET and msg.velocity == MIDI.KEYDOWN:
                         trx_cmd = do_toggle("MUTE", MIDI.KEYDOWN, curr_rx, curr_subx)
+                    # elif msg.note == cc.BTN_JOG and msg.velocity == MIDI.KEYDOWN:
+                    #     if key == False:
+                    #         key = True
+                    #         trx_cmd = "KEYER:0,true,0;" 
+                    #     else:
+                    #         key = False
+                    #         trx_cmd = "KEYER:0,false,0;"
+
+                        # print("SET_IN_FOCUS")
                 elif msg.channel == 2:
                     if msg.note == cc.BTN_PLAY and msg.velocity == MIDI.KEYDOWN:
                         trx_cmd = do_toggle("RIT_ENABLE", MIDI.KEYDOWN, curr_rx, curr_subx)
@@ -557,9 +573,11 @@ async def midi_rx(tci_listener, midi_port):
                         else: vfo_step *= 2
                         print(f"vfo_step is {vfo_step}")
                     elif msg.note == cc.BTN_3 and msg.velocity == MIDI.KEYDOWN: # TX on when button down, RX is back when button up
-                        trx_cmd = f"TRX:{curr_rx},true;"
+                        # trx_cmd = "KEYER:0,true,0;"
+                        trx_cmd = f"TRX:{curr_rx},true,micPC;"
                     elif msg.note == cc.BTN_3 and msg.velocity == MIDI.KEYUP:   # TX on when button down, RX is back when button up
-                        trx_cmd = f"TRX:{curr_rx},false;"
+                        # trx_cmd = "KEYER:0,false,0;"
+                        trx_cmd = f"TRX:{curr_rx},false,micPC;"
                     elif msg.note == cc.BTN_4 and msg.velocity == MIDI.KEYDOWN: # Change filter
                         mod = get_param("MODULATION", curr_rx, curr_subx)
                         print(f"mod is {mod}")
