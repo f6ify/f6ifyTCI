@@ -4,6 +4,8 @@
 # by Matthew McDougal, KA0S Thanks to him for his work
 # Philippe Nouchi - project started on the 9th December 2024
 
+# Version 1.4 Ph. Nouchi - F6IFY le 18 mars 2025
+#   - Add the VFO step 10Hz with the BASS/Filter button on the DJControl Starlight
 # Version 1.3 Ph. Nouchi - F6IFY le 7 mars 2025
 #   - PTT with button 3 if hot cue is lit
 #   - Drive is now in percentage and watts on the console display
@@ -106,6 +108,7 @@ class DJS(IntEnum): # Value for the DJControl Starlight from hercule
     CROSSFADER = 0
     # ** *Buttons ** *
     PUSH_BUTTON = 0 # 144
+    BTN_FILTRE = 1
     BTN_SYNC = 5
     BTN_CUE = 6
     BTN_PLAY = 7
@@ -534,6 +537,8 @@ async def midi_rx(tci_listener, midi_port):
                 if msg.channel == 0:
                     if msg.note == cc.BTN_SHIFT and msg.velocity == MIDI.KEYDOWN:
                         trx_cmd = do_mod_scroll(MIDI.ENCDOWN, curr_rx, curr_subx)
+                    elif msg.note == cc.BTN_FILTRE:
+                        vfo_step = 10
                 elif msg.channel == 1:
                     if msg.note == cc.BTN_SHIFT and msg.velocity == MIDI.KEYDOWN:
                         trx_cmd = do_mod_scroll(MIDI.ENCUP, curr_rx, curr_subx)
