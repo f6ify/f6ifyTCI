@@ -2,6 +2,7 @@
 # or the DJControl Starlight midi device from Hercules
 # This script is a modification of the original script from the EESDR project
 # by Matthew McDougal, KA0S Thanks to him for his work
+# unfortunately works only with expertSDR3 Software and Python3.10
 # Philippe Nouchi - project started on the 9th December 2024
 
 # Version 1.4 Ph. Nouchi - F6IFY le 18 mars 2025
