@@ -1,12 +1,14 @@
-# modification by Philippe F6IFY to use the DJControl Compact midi device
-# or the DJControl Starlight midi device from Hercules
+# 
 # This script is a modification of the original script from the EESDR project
 # by Matthew McDougal, KA0S Thanks to him for his work
 # unfortunately works only with expertSDR3 Software and Python3.10
+# modification by Philippe F6IFY to use the DJControl Compact midi device
+# or the DJControl Starlight midi device from Hercules
 # Philippe Nouchi - project started on the 9th December 2024
 
 # Version 1.4 Ph. Nouchi - F6IFY le 18 mars 2025
 #   - Add the VFO step 10Hz with the BASS/Filter button on the DJControl Starlight
+#   - suppress all shift+buttons on the DJControl Compact because the modes roll up
 # Version 1.3 Ph. Nouchi - F6IFY le 7 mars 2025
 #   - PTT with button 3 if hot cue is lit
 #   - Drive is now in percentage and watts on the console display
@@ -77,7 +79,6 @@ class DJ(IntEnum): # Value for the DJControl compact from hercule
     BTN_CUE_B = 82
     BTN_PLAY_B = 81
     BTN_1A = 1
-    BTN_SHIFT1A = 5
     BTN_2A = 2
     BTN_3A = 3
     BTN_4A = 4
@@ -85,14 +86,8 @@ class DJ(IntEnum): # Value for the DJControl compact from hercule
     BTN_2B = 50
     BTN_3B = 51
     BTN_4B = 52
-    BTN_SHIFT1B = 53
-    BTN_SHIFT2B = 54
-    BTN_SHIFT3B = 55
-    BTN_SHIFT4B = 56
     BTN_REC = 43
-    BTN_SHIFTREC = 44
     BTN_AUTOMIX = 45
-    BTN_SHIFTAUTOMIX = 46
     BTN_MODE = 48
     BTN_SHIFT = 47
 
